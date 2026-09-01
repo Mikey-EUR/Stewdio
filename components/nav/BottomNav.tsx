@@ -53,7 +53,7 @@ export default function BottomNav() {
         {/* Centre FAB */}
         <div className="flex flex-1 flex-col items-center justify-end pb-2">
           <Link
-            href="/recipes"
+            href="/recipes?add=1"
             aria-label="Add recipe"
             className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full
                        bg-[#314A2E] shadow-[0_4px_14px_rgba(49,74,46,0.40)]

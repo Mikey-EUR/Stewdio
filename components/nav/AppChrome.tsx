@@ -1,13 +1,22 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import TopNav from './TopNav';
 
 export default function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const hideNav = pathname === '/login' || pathname.startsWith('/auth/');
+
+  useEffect(() => {
+    router.prefetch('/');
+    router.prefetch('/recipes');
+    router.prefetch('/plan');
+    router.prefetch('/groceries');
+  }, [router]);
 
   if (hideNav) {
     return <>{children}</>;

@@ -1,5 +1,5 @@
 import HomeClient from '@/components/home/HomeClient';
-import { fetchRecipeCollections, fetchRecipes, getCurrentAppUserProfile } from '@/lib/db';
+import { fetchRecipeCollections, fetchRecipesBasic, getCurrentAppUserProfile } from '@/lib/db';
 import { isConfigured } from '@/lib/supabase';
 import type { Recipe, RecipeCollection } from '@/lib/types';
 import type { Metadata } from 'next';
@@ -20,7 +20,7 @@ export default async function HomePage() {
         isLoggedIn = true;
         username = profile.username;
         [recipes, collections] = await Promise.all([
-          fetchRecipes().catch(() => []),
+          fetchRecipesBasic().catch(() => []),
           fetchRecipeCollections().catch(() => []),
         ]);
       }

@@ -18,7 +18,7 @@ import {
     X
 } from 'lucide-react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
 type SortMode = 'recent' | 'alpha' | 'rating';
@@ -424,7 +424,10 @@ function RecipesClientContent({
   initialCollections: RecipeCollection[];
 }) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const initialCollectionFromUrl = searchParams.get('collection') ?? 'all';
+  const shouldOpenAddFromUrl = searchParams.get('add') === '1';
 
   const supabase = createBrowserSupabase();
 
@@ -437,7 +440,23 @@ function RecipesClientContent({
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(shouldOpenAddFromUrl);
+
+  useEffect(() => {
+    if (searchParams.get('add') === '1') {
+      setAddOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleCloseAdd = () => {
+    setAddOpen(false);
+    if (searchParams.get('add') !== '1') return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('add');
+    const nextQuery = params.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  };
 
   const collectionMap = useMemo(() => new Map(collections.map((c) => [c.collection_id, c])), [collections]);
 
@@ -749,7 +768,7 @@ function RecipesClientContent({
 
       <AddRecipeWizard
         open={addOpen}
-        onClose={() => setAddOpen(false)}
+        onClose={handleCloseAdd}
         collections={collections}
         onRecipeCreated={(created) => {
           setRecipes((prev) => [created, ...prev]);

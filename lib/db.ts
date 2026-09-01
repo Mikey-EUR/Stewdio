@@ -78,6 +78,27 @@ export async function fetchRecipeCollections(): Promise<RecipeCollection[]> {
   return (data ?? []) as RecipeCollection[];
 }
 
+export async function fetchRecipesBasic(): Promise<Recipe[]> {
+  if (!isConfigured) return [];
+  const userId = await getCurrentAppUserId();
+  if (!userId) return [];
+
+  const sb = await createSupabaseServerClient();
+  const { data, error } = await sb
+    .from('recipes')
+    .select('recipe_id, title, time, servings, tags, steps, created_at, image_url, source, rating, notes')
+    .eq('created_by_app_user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('fetchRecipesBasic error:', error);
+    return [];
+  }
+
+  const recipeRows = (data ?? []) as DBRecipe[];
+  return recipeRows.map((r) => mapDBRecipeToRecipe(r, []));
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function mapDBRecipeToRecipe(
