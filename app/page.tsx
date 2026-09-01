@@ -1,7 +1,6 @@
 import HomeClient from '@/components/home/HomeClient';
-import { fetchRecipeCollections, fetchRecipes } from '@/lib/db';
+import { fetchRecipeCollections, fetchRecipes, getCurrentAppUserProfile } from '@/lib/db';
 import { isConfigured } from '@/lib/supabase';
-import { createSupabaseServerClient } from '@/lib/supabase-server';
 import type { Recipe, RecipeCollection } from '@/lib/types';
 import type { Metadata } from 'next';
 
@@ -16,16 +15,10 @@ export default async function HomePage() {
 
   if (isConfigured) {
     try {
-      const sb = await createSupabaseServerClient();
-      const { data: { user } } = await sb.auth.getUser();
-      if (user?.email) {
+      const profile = await getCurrentAppUserProfile();
+      if (profile?.appUserId) {
         isLoggedIn = true;
-        const { data: appUser } = await sb
-          .from('app_users')
-          .select('username')
-          .eq('user_email_address', user.email.toLowerCase().trim())
-          .single();
-        username = (appUser as any)?.username ?? '';
+        username = profile.username;
         [recipes, collections] = await Promise.all([
           fetchRecipes().catch(() => []),
           fetchRecipeCollections().catch(() => []),

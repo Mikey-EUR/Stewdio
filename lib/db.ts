@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { isConfigured } from './supabase';
 import { createSupabaseServerClient } from './supabase-server';
 import type {
@@ -10,6 +11,41 @@ import type {
 import type { PlannedRecipe } from './weeks';
 export { getWeeks, toLocalDateStr } from './weeks';
 export type { PlannedRecipe, WeekDates, WeekKey, Weeks } from './weeks';
+
+type CurrentAppUser = {
+  appUserId: string;
+  username: string;
+};
+
+const getCurrentAppUserCached = cache(async (): Promise<CurrentAppUser | null> => {
+  if (!isConfigured) return null;
+
+  try {
+    const sb = await createSupabaseServerClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const email = user?.email?.toLowerCase().trim();
+    if (!email) return null;
+
+    const { data: appUser } = await sb
+      .from('app_users')
+      .select('app_user_id, username')
+      .eq('user_email_address', email)
+      .maybeSingle();
+
+    if (!appUser?.app_user_id) return null;
+
+    return {
+      appUserId: appUser.app_user_id,
+      username: appUser.username ?? '',
+    };
+  } catch {
+    return null;
+  }
+});
+
+export async function getCurrentAppUserProfile(): Promise<CurrentAppUser | null> {
+  return getCurrentAppUserCached();
+}
 
 export async function fetchPlannedRecipes(): Promise<PlannedRecipe[]> {
   if (!isConfigured) return [];
@@ -92,19 +128,8 @@ function mapDBRecipeToRecipe(
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
 export async function getCurrentAppUserId(): Promise<string | null> {
-  try {
-    const sb = await createSupabaseServerClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user?.email) return null;
-    const { data: appUser } = await sb
-      .from('app_users')
-      .select('app_user_id')
-      .eq('user_email_address', user.email.toLowerCase().trim())
-      .single();
-    return appUser?.app_user_id ?? null;
-  } catch {
-    return null;
-  }
+  const profile = await getCurrentAppUserCached();
+  return profile?.appUserId ?? null;
 }
 
 // ── Recipe queries ────────────────────────────────────────────────────────────
