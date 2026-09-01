@@ -146,7 +146,18 @@ export async function fetchRecipes(): Promise<Recipe[]> {
   }
 
   const byRecipeId = new Map<number, DBIngredient[]>();
-  ((ingredientRows ?? []) as DBIngredient[]).forEach((ing) => {
+  const normalizedIngredients = ((ingredientRows ?? []) as Array<DBIngredient & {
+    ingredient_grocery_list_category?:
+      | DBIngredient['ingredient_grocery_list_category']
+      | Array<NonNullable<DBIngredient['ingredient_grocery_list_category']>>;
+  }>).map((ing) => ({
+    ...ing,
+    ingredient_grocery_list_category: Array.isArray(ing.ingredient_grocery_list_category)
+      ? ing.ingredient_grocery_list_category[0]
+      : ing.ingredient_grocery_list_category,
+  }));
+
+  normalizedIngredients.forEach((ing) => {
     const list = byRecipeId.get(ing.recipe_id) ?? [];
     list.push(ing);
     byRecipeId.set(ing.recipe_id, list);

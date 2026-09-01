@@ -2,14 +2,14 @@ import HomeClient from '@/components/home/HomeClient';
 import { fetchRecipeCollections, fetchRecipes } from '@/lib/db';
 import { isConfigured } from '@/lib/supabase';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import type { RecipeCollection } from '@/lib/types';
+import type { Recipe, RecipeCollection } from '@/lib/types';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Home | Stewdio' };
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  let recipes = [];
+  let recipes: Recipe[] = [];
   let collections: RecipeCollection[] = [];
   let username = '';
   let isLoggedIn = false;

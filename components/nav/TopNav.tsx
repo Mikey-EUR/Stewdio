@@ -1,7 +1,8 @@
 'use client';
 
 import { createBrowserSupabase } from '@/lib/supabase';
-import { BookOpen, CalendarDays, Home, LogIn, LogOut, ShoppingCart, User } from 'lucide-react';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
+import { BookOpen, CalendarDays, Home, LogIn, LogOut, ShoppingCart, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -20,10 +21,10 @@ export default function TopNav() {
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
       setUserEmail(user?.email ?? null);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUserEmail(session?.user?.email ?? null);
     });
     return () => subscription.unsubscribe();
@@ -79,7 +80,7 @@ export default function TopNav() {
               href="/profile"
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#708C69] hover:bg-[#F0EDE6] hover:text-[#314A2E] transition-colors"
             >
-              <User size={16} />
+              <UserIcon size={16} />
               <span className="hidden md:inline max-w-[120px] truncate">{userEmail}</span>
             </Link>
             <button

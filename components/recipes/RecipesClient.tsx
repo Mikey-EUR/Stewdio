@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 
 type SortMode = 'recent' | 'alpha' | 'rating';
 type ViewMode = 'grid' | 'list';
@@ -400,6 +400,23 @@ function RecipeEditModal({
 }
 
 export default function RecipesClient({
+  initialRecipes,
+  initialCollections,
+}: {
+  initialRecipes: Recipe[];
+  initialCollections: RecipeCollection[];
+}) {
+  return (
+    <Suspense fallback={null}>
+      <RecipesClientContent
+        initialRecipes={initialRecipes}
+        initialCollections={initialCollections}
+      />
+    </Suspense>
+  );
+}
+
+function RecipesClientContent({
   initialRecipes,
   initialCollections,
 }: {

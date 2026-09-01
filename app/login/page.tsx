@@ -3,9 +3,17 @@
 import { createBrowserSupabase } from '@/lib/supabase';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { Suspense, useState, useTransition } from 'react';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const searchParams = useSearchParams();
   const hasError = searchParams.get('error') === 'auth';
 

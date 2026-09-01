@@ -245,9 +245,10 @@ export default function PlanClient({ initialPlannedRecipes, initialRecipes }: Pr
   });
 
   // For agenda view — group by day
-  const byDay: Record<DayName, PlannedRecipe[]> = Object.fromEntries(
-    DAYS.map(d => [d, []])
-  ) as Record<DayName, PlannedRecipe[]>;
+  const byDay = DAYS.reduce<Record<DayName, PlannedRecipe[]>>((acc, day) => {
+    acc[day] = [];
+    return acc;
+  }, {} as Record<DayName, PlannedRecipe[]>);
 
   weekPRs.forEach(pr => {
     const day = (DAYS.includes(pr.day_of_week as DayName) ? pr.day_of_week : 'any') as DayName;
