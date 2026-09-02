@@ -1,8 +1,8 @@
 'use client';
 
-import { createBrowserSupabase } from '@/lib/supabase';
+import { useAppData } from '@/lib/DataProvider';
 import type { Ingredient, IngredientCategory, Recipe } from '@/lib/types';
-import type { PlannedRecipe, WeekKey, Weeks } from '@/lib/weeks';
+import type { WeekKey, Weeks } from '@/lib/weeks';
 import { getWeeks, toLocalDateStr } from '@/lib/weeks';
 import { Check, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -93,24 +93,22 @@ function IngredientInfoModal({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props {
-  initialPlannedRecipes: PlannedRecipe[];
-  initialRecipes: Recipe[];
-}
-
-export default function GroceriesClient({ initialPlannedRecipes, initialRecipes }: Props) {
+export default function GroceriesClient() {
   const weeks = getWeeks();
-  const supabase = createBrowserSupabase();
+  const { recipes, plannedRecipes, refreshRecipes, refreshPlannedRecipes } = useAppData();
 
   const [selectedWeeks, setSelectedWeeks] = useState<WeekKey[]>(['current']);
-  const [plannedRecipes, setPlannedRecipes] = useState<PlannedRecipe[]>(initialPlannedRecipes);
-  const [recipes] = useState<Recipe[]>(initialRecipes);
   const [checkedKeys, setCheckedKeys] = useState<Set<string>>(new Set());
   const [checkedOrder, setCheckedOrder] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState(false);
   const [deselectedKeys, setDeselectedKeys] = useState<Set<string>>(new Set());
   const [expandedWeeks, setExpandedWeeks] = useState<Set<WeekKey>>(new Set(['current']));
   const [infoModal, setInfoModal] = useState<{ ingredient: string; usages: RecipeUsageEntry[] } | null>(null);
+
+  useEffect(() => {
+    void refreshRecipes();
+    void refreshPlannedRecipes();
+  }, [refreshRecipes, refreshPlannedRecipes]);
 
   const recipeMap = Object.fromEntries(recipes.map(r => [r.id, r]));
 

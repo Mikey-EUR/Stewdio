@@ -1,8 +1,10 @@
 'use client';
 
+import { useAppData } from '@/lib/DataProvider';
+import { logNavClick } from '@/lib/perfLog';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
-import { BookOpen, CalendarDays, Home, LogIn, LogOut, ShoppingCart, User as UserIcon } from 'lucide-react';
+import { BookOpen, CalendarDays, Home, LogIn, LogOut, Plus, ShoppingCart, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,6 +21,7 @@ export default function TopNav() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const supabase = createBrowserSupabase();
+  const { openAddRecipe } = useAppData();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }: { data: { user: User | null } }) => {
@@ -35,6 +38,8 @@ export default function TopNav() {
     router.push('/login');
     router.refresh();
   };
+
+
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#E8E4DC]">
@@ -58,6 +63,7 @@ export default function TopNav() {
               <Link
                 key={href}
                 href={href}
+                onClick={() => logNavClick(href)}
                 className={[
                   'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                   active
@@ -72,6 +78,14 @@ export default function TopNav() {
             );
           })}
         </nav>
+
+        <button
+          onClick={openAddRecipe}
+          className="mr-3 hidden items-center gap-1.5 rounded-lg bg-[#314A2E] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#243124] md:inline-flex"
+        >
+          <Plus size={15} />
+          Add Recipe
+        </button>
 
         {/* Auth section */}
         {userEmail ? (

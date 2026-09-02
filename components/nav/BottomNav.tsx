@@ -1,8 +1,10 @@
 'use client';
 
+import { useAppData } from '@/lib/DataProvider';
+import { logNavClick } from '@/lib/perfLog';
 import { BookOpen, CalendarDays, Home, Plus, ShoppingCart } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 const LEFT_ITEMS  = [
   { href: '/',          label: 'Home',      Icon: Home          },
@@ -20,6 +22,7 @@ function NavBtn({ href, label, Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link
       href={href}
+      onClick={() => logNavClick(href)}
       className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-w-0 select-none"
     >
       <Icon
@@ -36,6 +39,7 @@ function NavBtn({ href, label, Icon, active }: NavItem & { active: boolean }) {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { openAddRecipe } = useAppData();
 
   return (
     <nav
@@ -52,15 +56,16 @@ export default function BottomNav() {
 
         {/* Centre FAB */}
         <div className="flex flex-1 flex-col items-center justify-end pb-2">
-          <Link
-            href="/recipes?add=1"
+          <button
+            type="button"
+            onClick={openAddRecipe}
             aria-label="Add recipe"
             className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full
                        bg-[#314A2E] shadow-[0_4px_14px_rgba(49,74,46,0.40)]
                        hover:bg-[#243124] active:scale-95 transition-all"
           >
             <Plus size={26} color="white" strokeWidth={2.5} />
-          </Link>
+          </button>
         </div>
 
         {/* Right two items */}

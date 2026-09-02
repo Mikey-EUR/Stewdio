@@ -1,7 +1,7 @@
 'use client';
 
-import AddRecipeWizard from '@/components/recipes/AddRecipeWizard';
 import RecipeModal from '@/components/recipes/RecipeModal';
+import { useAppData } from '@/lib/DataProvider';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Recipe, RecipeCollection } from '@/lib/types';
 import {
@@ -18,7 +18,7 @@ import {
     X
 } from 'lucide-react';
 import Image from 'next/image';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
 type SortMode = 'recent' | 'alpha' | 'rating';
@@ -399,40 +399,21 @@ function RecipeEditModal({
   );
 }
 
-export default function RecipesClient({
-  initialRecipes,
-  initialCollections,
-}: {
-  initialRecipes: Recipe[];
-  initialCollections: RecipeCollection[];
-}) {
+export default function RecipesClient() {
   return (
     <Suspense fallback={null}>
-      <RecipesClientContent
-        initialRecipes={initialRecipes}
-        initialCollections={initialCollections}
-      />
+      <RecipesClientContent />
     </Suspense>
   );
 }
 
-function RecipesClientContent({
-  initialRecipes,
-  initialCollections,
-}: {
-  initialRecipes: Recipe[];
-  initialCollections: RecipeCollection[];
-}) {
+function RecipesClientContent() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
   const initialCollectionFromUrl = searchParams.get('collection') ?? 'all';
-  const shouldOpenAddFromUrl = searchParams.get('add') === '1';
 
   const supabase = createBrowserSupabase();
+  const { recipes, setRecipes, collections, setCollections, refreshRecipes, refreshCollections, openAddRecipe: openAddRecipeModal } = useAppData();
 
-  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
-  const [collections, setCollections] = useState<RecipeCollection[]>(initialCollections);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortMode>('recent');
   const [view, setView] = useState<ViewMode>('grid');
@@ -440,22 +421,14 @@ function RecipesClientContent({
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(shouldOpenAddFromUrl);
 
   useEffect(() => {
-    if (searchParams.get('add') === '1') {
-      setAddOpen(true);
-    }
-  }, [searchParams]);
+    void refreshRecipes();
+    void refreshCollections();
+  }, [refreshRecipes, refreshCollections]);
 
-  const handleCloseAdd = () => {
-    setAddOpen(false);
-    if (searchParams.get('add') !== '1') return;
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('add');
-    const nextQuery = params.toString();
-    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+  const openAddRecipe = () => {
+    openAddRecipeModal();
   };
 
   const collectionMap = useMemo(() => new Map(collections.map((c) => [c.collection_id, c])), [collections]);
@@ -634,7 +607,7 @@ function RecipesClientContent({
             <p className="mt-1 text-sm text-[#708C69]">Your recipes by collections.</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setAddOpen(true)} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#314A2E] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#243124] transition-all">
+            <button onClick={openAddRecipe} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#314A2E] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#243124] transition-all">
               <Plus size={15} />
               <span className="hidden sm:inline">Add Recipe</span>
               <span className="sm:hidden">Add</span>
@@ -764,21 +737,6 @@ function RecipesClientContent({
         onRename={renameCollection}
         onDelete={deleteCollection}
         onSetRecipes={saveCollectionRecipes}
-      />
-
-      <AddRecipeWizard
-        open={addOpen}
-        onClose={handleCloseAdd}
-        collections={collections}
-        onRecipeCreated={(created) => {
-          setRecipes((prev) => [created, ...prev]);
-        }}
-        onCollectionCreated={(createdCollection) => {
-          setCollections((prev) => [...prev, createdCollection]);
-        }}
-        onCollectionUpdated={(collectionId, recipeIds) => {
-          setCollections((prev) => prev.map((c) => (c.collection_id === collectionId ? { ...c, recipe_ids: recipeIds } : c)));
-        }}
       />
 
       <RecipeEditModal

@@ -1,13 +1,14 @@
 'use client';
 
 import RecipeModal from '@/components/recipes/RecipeModal';
+import { useAppData } from '@/lib/DataProvider';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Recipe } from '@/lib/types';
 import type { PlannedRecipe, WeekKey, Weeks } from '@/lib/weeks';
 import { getWeeks, toLocalDateStr } from '@/lib/weeks';
 import { CalendarDays, Check, ChevronLeft, ChevronRight, List, Pencil, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const DAYS = ['any', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 type DayName = typeof DAYS[number];
@@ -207,24 +208,22 @@ function RecipeQuickView({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props {
-  initialPlannedRecipes: PlannedRecipe[];
-  initialRecipes: Recipe[];
-}
-
-export default function PlanClient({ initialPlannedRecipes, initialRecipes }: Props) {
+export default function PlanClient() {
   const supabase = createBrowserSupabase();
   const weeks = getWeeks();
+  const { recipes, setRecipes, plannedRecipes, setPlannedRecipes, refreshRecipes, refreshPlannedRecipes } = useAppData();
 
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('current');
   const [viewMode, setViewMode] = useState<'weekly' | 'agenda'>('weekly');
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
-  const [plannedRecipes, setPlannedRecipes] = useState<PlannedRecipe[]>(initialPlannedRecipes);
-  const [recipes] = useState<Recipe[]>(initialRecipes);
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [editingEntry, setEditingEntry] = useState<PlannedRecipe | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    void refreshRecipes();
+    void refreshPlannedRecipes();
+  }, [refreshRecipes, refreshPlannedRecipes]);
 
   // Recipe lookup map
   const recipeMap = Object.fromEntries(recipes.map(r => [r.id, r]));
@@ -256,12 +255,6 @@ export default function PlanClient({ initialPlannedRecipes, initialRecipes }: Pr
   });
 
   // Refresh from server
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    const { data } = await supabase.from('planned_recipes').select('*').order('planned_date', { ascending: true });
-    if (data) setPlannedRecipes(data as PlannedRecipe[]);
-    setIsLoading(false);
-  }, [supabase]);
 
   const handleRemove = async (pr: PlannedRecipe) => {
     setPlannedRecipes(prev => prev.filter(p => p.planned_recipe_id !== pr.planned_recipe_id));
@@ -504,7 +497,14 @@ export default function PlanClient({ initialPlannedRecipes, initialRecipes }: Pr
         onSave={(patch) => editingEntry ? handleEditEntry(editingEntry, patch) : Promise.resolve()}
       />
       {selectedRecipe && (
-        <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onChanged={(updated) => {
+            setRecipes((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+            setSelectedRecipe((prev) => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
+          }}
+        />
       )}
     </main>
   );

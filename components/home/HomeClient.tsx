@@ -1,6 +1,7 @@
 'use client';
 
 import RecipeModal from '@/components/recipes/RecipeModal';
+import { useAppData } from '@/lib/DataProvider';
 import type { Recipe, RecipeCollection } from '@/lib/types';
 import {
     ArrowRight,
@@ -25,13 +26,6 @@ interface Collection {
   image?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Icon: any;
-}
-
-interface HomeClientProps {
-  recipes: Recipe[];
-  collections: RecipeCollection[];
-  username?: string;
-  isLoggedIn?: boolean;
 }
 
 // ─── Collection builder ───────────────────────────────────────────────────────
@@ -62,12 +56,8 @@ function buildCollections(
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function HomeClient({
-  recipes,
-  collections: dbCollections,
-  username,
-  isLoggedIn = false,
-}: HomeClientProps) {
+export default function HomeClient() {
+  const { recipes, collections: dbCollections, username, isLoggedIn, authChecked, setRecipes } = useAppData();
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   const featured = recipes[0] ?? null;
@@ -131,12 +121,19 @@ export default function HomeClient({
         )}
 
         {/* ── Empty state ──────────────────────────────────────────────────── */}
-        {recipes.length === 0 && (isLoggedIn ? <GlobalEmptyState /> : <SignInPrompt />)}
+        {recipes.length === 0 && authChecked && (isLoggedIn ? <GlobalEmptyState /> : <SignInPrompt />)}
       </div>
 
       {/* Recipe modal */}
       {selectedRecipe && (
-        <RecipeModal recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onChanged={(updated) => {
+            setRecipes((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
+            setSelectedRecipe((prev) => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
+          }}
+        />
       )}
     </main>
   );

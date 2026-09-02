@@ -1,10 +1,10 @@
 import { cache } from 'react';
+import { mapDBRecipeToRecipe } from './recipeMapping';
 import { isConfigured } from './supabase';
 import { createSupabaseServerClient } from './supabase-server';
 import type {
     DBIngredient,
     DBRecipe,
-    IngredientCategory,
     Recipe,
     RecipeCollection,
 } from './types';
@@ -100,51 +100,6 @@ export async function fetchRecipesBasic(): Promise<Recipe[]> {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function mapDBRecipeToRecipe(
-  row: DBRecipe,
-  ingredients: DBIngredient[] = [],
-): Recipe {
-  // Group ingredients by recipe-screen category
-  const byCategory: Record<string, IngredientCategory> = {};
-
-  for (const ing of ingredients) {
-    const cat =
-      ing.category_ingredient_in_recipe_screen ||
-      ing.ingredient_grocery_list_category?.category_grocery ||
-      'Ingredients';
-
-    if (!byCategory[cat]) {
-      byCategory[cat] = { category: cat, items: [] };
-    }
-
-    byCategory[cat].items.push({
-      amount: ing.quantity ?? 0,
-      unit: ing.unit_name ?? '',
-      ingredient:
-        ing.ingredient_grocery_list_category?.name ?? ing.ingredient_name,
-      form: ing.form ?? '',
-      grocery_category:
-        ing.ingredient_grocery_list_category?.category_grocery ?? 'General',
-    });
-  }
-
-  return {
-    id: row.recipe_id.toString(),
-    title: row.title,
-    time: row.time,
-    servings: row.servings,
-    ingredients:
-      Object.values(byCategory).length > 0 ? Object.values(byCategory) : [],
-    steps: row.steps ?? [],
-    tags: row.tags ?? [],
-    image: row.image_url ?? undefined,
-    source: row.source ?? undefined,
-    created_at: row.created_at,
-    rating: row.rating ?? null,
-    notes: row.notes ?? [],
-  };
-}
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
