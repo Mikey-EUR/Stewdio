@@ -1,9 +1,11 @@
 'use client';
 
+import { scaleIngredients } from '@/lib/scaleIngredients';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Ingredient, IngredientCategory, Recipe } from '@/lib/types';
+import { convertToDisplayUnit, DISPLAY_UNIT_OPTIONS, type DisplayUnit } from '@/lib/unitConversions';
 import { getWeeks, toLocalDateStr, type WeekKey } from '@/lib/weeks';
-import { Clock, ExternalLink, FileDown, Flame, CalendarPlus, Star, Users, X } from 'lucide-react';
+import { Clock, ExternalLink, FileDown, Flame, CalendarPlus, Minus, Plus, Scale, Star, Users, X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -11,6 +13,8 @@ interface RecipeModalProps {
   recipe: Recipe;
   onClose: () => void;
   onChanged?: (updated: Recipe) => void;
+  /** Starting servings for cook mode — e.g. the servings planned for this day, instead of the recipe's default. */
+  initialServings?: number;
 }
 
 function isCategory(item: unknown): item is IngredientCategory {
@@ -25,7 +29,7 @@ function flattenIngredients(ingredients: Ingredient[] | IngredientCategory[]): I
   return ingredients as Ingredient[];
 }
 
-export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalProps) {
+export default function RecipeModal({ recipe, onClose, onChanged, initialServings }: RecipeModalProps) {
   const supabase = createBrowserSupabase();
   const weeks = getWeeks();
 
@@ -34,12 +38,23 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
   const [savingRating, setSavingRating] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<WeekKey>('current');
   const [selectedDay, setSelectedDay] = useState<'any' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'>('any');
-  const [planServings, setPlanServings] = useState<number>(Math.max(1, recipe.servings || 1));
+  const [planServings, setPlanServings] = useState(String(Math.max(1, recipe.servings || 1)));
   const [planning, setPlanning] = useState(false);
   const [planMessage, setPlanMessage] = useState('');
 
   const [checkedIngredients, setCheckedIngredients] = useState<Record<string, boolean>>({});
   const [checkedSteps, setCheckedSteps] = useState<Record<number, boolean>>({});
+
+  // Cook mode: defaults to the planned servings (if opened from a meal-plan entry) instead of the recipe's base servings.
+  const [cookServings, setCookServings] = useState(Math.max(1, initialServings ?? recipe.servings ?? 1));
+  const [displayUnit, setDisplayUnit] = useState<DisplayUnit>('original');
+  const [notesText, setNotesText] = useState((recipe.notes ?? []).join('\n'));
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  useEffect(() => {
+    setCookServings(Math.max(1, initialServings ?? recipe.servings ?? 1));
+    setNotesText((recipe.notes ?? []).join('\n'));
+  }, [recipe.id, initialServings]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -59,6 +74,43 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
   const ingredients = recipe.ingredients ?? [];
   const grouped = ingredients.length > 0 && isCategory(ingredients[0]);
   const flatIngredients = useMemo(() => flattenIngredients(ingredients), [ingredients]);
+
+  const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 1;
+  const scaledIngredients = useMemo(
+    () => scaleIngredients(ingredients, cookServings, baseServings),
+    [ingredients, cookServings, baseServings],
+  );
+  const flatScaledIngredients = useMemo(() => flattenIngredients(scaledIngredients), [scaledIngredients]);
+
+  /** Bolds ingredient names when they appear in a step's text and annotates them with the scaled, unit-converted amount. */
+  const renderStepWithIngredients = (step: string) => {
+    const ingredientMap = new Map<string, { amount: string; unit: string }>();
+    flatScaledIngredients.forEach((ing) => {
+      const name = String(ing.ingredient ?? '').trim();
+      if (!name) return;
+      const converted = convertToDisplayUnit(ing.scaled ?? ing.amount, ing.unit, displayUnit);
+      ingredientMap.set(name.toLowerCase(), converted);
+    });
+
+    const names = Array.from(ingredientMap.keys()).sort((a, b) => b.length - a.length);
+    if (names.length === 0) return step;
+
+    const escaped = names.map((n) => n.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'));
+    const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi');
+    const parts = step.split(regex);
+
+    return parts.map((part, i) => {
+      const info = ingredientMap.get(part.toLowerCase());
+      if (!info) return <span key={i}>{part}</span>;
+      const hasAmount = info.amount !== undefined && info.amount !== '' && info.amount !== 'null';
+      const annotation = hasAmount ? ` (${info.amount}${info.unit ? ' ' + info.unit : ''})` : '';
+      return (
+        <strong key={i} className="font-semibold text-[#314A2E]">
+          {part}{annotation}
+        </strong>
+      );
+    });
+  };
 
   const exportPdf = () => {
     const html = `
@@ -103,7 +155,29 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
     }
   };
 
+  const updateNotes = async () => {
+    const notesArray = notesText.split('\n').map((n) => n.trim()).filter(Boolean);
+    setSavingNotes(true);
+    const { error } = await supabase
+      .from('recipes')
+      .update({ notes: notesArray, updated_at: new Date().toISOString() })
+      .eq('recipe_id', Number(recipe.id));
+
+    setSavingNotes(false);
+    if (!error && onChanged) {
+      onChanged({ ...recipe, notes: notesArray });
+    }
+  };
+
+  const parsedPlanServings = Number.parseInt(planServings, 10);
+  const isPlanServingsValid = planServings.length > 0 && Number.isInteger(parsedPlanServings) && parsedPlanServings >= 1;
+
   const planRecipe = async () => {
+    if (!isPlanServingsValid) {
+      setPlanMessage('Enter a valid number of servings.');
+      return;
+    }
+
     setPlanning(true);
     setPlanMessage('');
 
@@ -136,7 +210,7 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
       recipe_id: recipe.id,
       planned_date: plannedDate,
       day_of_week: selectedDay,
-      servings: Math.max(1, planServings),
+      servings: parsedPlanServings,
       app_user_id: appUser.app_user_id,
       is_cooked: false,
     });
@@ -245,34 +319,71 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
                 </section>
               )}
 
-              {recipe.notes && recipe.notes.length > 0 && (
-                <section className="mt-6">
-                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#708C69]">Notes</h3>
-                  <ul className="space-y-2">
-                    {recipe.notes.map((note, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-[#708C69]"><span className="text-[#D97442]">-</span>{note}</li>
-                    ))}
-                  </ul>
-                </section>
-              )}
+              <section className="mt-6">
+                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#708C69]">Notes</h3>
+                <textarea
+                  value={notesText}
+                  onChange={(e) => setNotesText(e.target.value)}
+                  onBlur={updateNotes}
+                  placeholder="Add your personal notes, tips, or modifications here..."
+                  rows={3}
+                  className="w-full resize-none rounded-md border border-[#E8E4DC] px-3 py-2 text-sm text-[#243124] outline-none focus:border-[#314A2E]"
+                />
+                {savingNotes && <p className="mt-1 text-xs text-[#A9B388]">Saving...</p>}
+              </section>
             </>
           )}
 
           {view === 'cook' && (
             <>
+              <section className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#F5F2EB] px-3 py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-[#243124]">Servings</span>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#E8E4DC] bg-white px-2 py-1">
+                    <button
+                      onClick={() => setCookServings((n) => Math.max(1, n - 1))}
+                      aria-label="Decrease servings"
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-[#708C69] hover:bg-[#F0EDE6] hover:text-[#314A2E]"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-5 text-center text-sm font-semibold text-[#243124]">{cookServings}</span>
+                    <button
+                      onClick={() => setCookServings((n) => n + 1)}
+                      aria-label="Increase servings"
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-[#708C69] hover:bg-[#F0EDE6] hover:text-[#314A2E]"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-1.5 text-xs text-[#708C69]">
+                  <Scale size={13} />
+                  <select
+                    value={displayUnit}
+                    onChange={(e) => setDisplayUnit(e.target.value as DisplayUnit)}
+                    className="rounded-md border border-[#E8E4DC] bg-white px-2 py-1 text-xs text-[#243124]"
+                  >
+                    {DISPLAY_UNIT_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </label>
+              </section>
+
               <section className="mb-6">
                 <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#708C69]">Cook checklist</h3>
                 <div className="space-y-2">
-                  {flatIngredients.map((ing, i) => {
+                  {flatScaledIngredients.map((ing, i) => {
                     const key = `ing-${i}`;
                     const checked = Boolean(checkedIngredients[key]);
+                    const converted = convertToDisplayUnit(ing.scaled ?? ing.amount, ing.unit, displayUnit);
                     return (
                       <button key={key} onClick={() => setCheckedIngredients((p) => ({ ...p, [key]: !checked }))} className="w-full flex items-center gap-2 rounded-md border border-[#E8E4DC] px-2 py-2 text-left">
                         <span className={`h-4 w-4 rounded border flex items-center justify-center ${checked ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD]'}`}>
                           {checked && <Star size={10} className="text-white" />}
                         </span>
                         <span className={`text-sm ${checked ? 'line-through text-[#A9B388]' : 'text-[#243124]'}`}>
-                          {[ing.amount, ing.unit, ing.ingredient, ing.form].filter(Boolean).join(' ')}
+                          {[converted.amount, converted.unit, ing.ingredient, ing.form].filter(Boolean).join(' ')}
                         </span>
                       </button>
                     );
@@ -290,7 +401,7 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
                         <span className={`mt-0.5 h-4 w-4 rounded border flex items-center justify-center ${checked ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD]'}`}>
                           {checked && <Star size={10} className="text-white" />}
                         </span>
-                        <span className={`text-sm ${checked ? 'line-through text-[#A9B388]' : 'text-[#243124]'}`}>{step}</span>
+                        <span className={`text-sm ${checked ? 'line-through text-[#A9B388]' : 'text-[#243124]'}`}>{renderStepWithIngredients(step)}</span>
                       </button>
                     );
                   })}
@@ -318,9 +429,17 @@ export default function RecipeModal({ recipe, onClose, onChanged }: RecipeModalP
                   <option value="Saturday">Saturday</option>
                   <option value="Sunday">Sunday</option>
                 </select>
-                <input type="number" min={1} value={planServings} onChange={(e) => setPlanServings(Math.max(1, Number(e.target.value) || 1))} className="rounded-md border border-[#E8E4DC] px-2 py-2 text-sm" />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={planServings}
+                  onChange={(e) => setPlanServings(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="Servings"
+                  className="rounded-md border border-[#E8E4DC] px-2 py-2 text-sm"
+                />
               </div>
-              <button onClick={planRecipe} disabled={planning} className="rounded-lg bg-[#314A2E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#243124] disabled:opacity-60">
+              <button onClick={planRecipe} disabled={planning || !isPlanServingsValid} className="rounded-lg bg-[#314A2E] px-4 py-2 text-sm font-semibold text-white hover:bg-[#243124] disabled:opacity-60">
                 {planning ? 'Adding...' : 'Add to plan'}
               </button>
               {planMessage && <p className="mt-2 text-sm text-[#708C69]">{planMessage}</p>}

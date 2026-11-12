@@ -109,19 +109,22 @@ function AgendaEditModal({
   onSave: (patch: Partial<PlannedRecipe>) => Promise<void>;
 }) {
   const [day, setDay] = useState<DayName>('any');
-  const [servings, setServings] = useState(1);
+  const [servings, setServings] = useState('1');
   const [tag, setTag] = useState('');
   const [cooked, setCooked] = useState(false);
 
   useEffect(() => {
     if (!open || !entry) return;
     setDay((DAYS.includes(entry.day_of_week as DayName) ? entry.day_of_week : 'any') as DayName);
-    setServings(Math.max(1, entry.servings || 1));
+    setServings(String(Math.max(1, entry.servings || 1)));
     setTag(entry.tag ?? '');
     setCooked(Boolean(entry.is_cooked));
   }, [open, entry]);
 
   if (!open || !entry) return null;
+
+  const parsedServings = Number.parseInt(servings, 10);
+  const isServingsValid = servings.length > 0 && Number.isInteger(parsedServings) && parsedServings >= 1;
 
   return (
     <div className="fixed inset-0 z-[210] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
@@ -140,7 +143,15 @@ function AgendaEditModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#708C69]">Servings</label>
-            <input type="number" min={1} value={servings} onChange={(e) => setServings(Math.max(1, Number(e.target.value) || 1))} className="w-full rounded-md border border-[#E8E4DC] px-2 py-2 text-sm" />
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={servings}
+              onChange={(e) => setServings(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-full rounded-md border border-[#E8E4DC] px-2 py-2 text-sm"
+            />
+            {!isServingsValid && <p className="mt-1 text-xs text-red-500">Enter a number of servings.</p>}
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#708C69]">Tag</label>
@@ -152,10 +163,12 @@ function AgendaEditModal({
           </label>
           <button
             onClick={async () => {
-              await onSave({ day_of_week: day, servings, tag, is_cooked: cooked });
+              if (!isServingsValid) return;
+              await onSave({ day_of_week: day, servings: parsedServings, tag, is_cooked: cooked });
               onClose();
             }}
-            className="w-full rounded-lg bg-[#314A2E] py-2 text-sm font-semibold text-white"
+            disabled={!isServingsValid}
+            className="w-full rounded-lg bg-[#314A2E] py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             Save
           </button>
@@ -218,6 +231,7 @@ export default function PlanClient() {
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [selectedPr, setSelectedPr] = useState<PlannedRecipe | null>(null);
   const [editingEntry, setEditingEntry] = useState<PlannedRecipe | null>(null);
 
   useEffect(() => {
@@ -425,7 +439,7 @@ export default function PlanClient() {
                       onRemove={() => handleRemove(pr)}
                       onCookedToggle={() => handleCookedToggle(pr)}
                       onEdit={() => setEditingEntry(pr)}
-                      onClick={() => setSelectedRecipe(recipe)}
+                      onClick={() => { setSelectedRecipe(recipe); setSelectedPr(pr); }}
                     />
                   </div>
                 );
@@ -473,7 +487,7 @@ export default function PlanClient() {
                           onEdit={() => setEditingEntry(pr)}
                           onDragStart={handleDragStart(pr)}
                           isDragging={dragId === pr.planned_recipe_id}
-                          onClick={() => setSelectedRecipe(recipe)}
+                          onClick={() => { setSelectedRecipe(recipe); setSelectedPr(pr); }}
                         />
                       );
                     })}
@@ -499,7 +513,8 @@ export default function PlanClient() {
       {selectedRecipe && (
         <RecipeModal
           recipe={selectedRecipe}
-          onClose={() => setSelectedRecipe(null)}
+          initialServings={selectedPr?.servings}
+          onClose={() => { setSelectedRecipe(null); setSelectedPr(null); }}
           onChanged={(updated) => {
             setRecipes((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
             setSelectedRecipe((prev) => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));

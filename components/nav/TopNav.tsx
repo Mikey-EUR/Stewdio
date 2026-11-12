@@ -91,7 +91,7 @@ export default function TopNav() {
         {userEmail ? (
           <div className="flex items-center gap-2">
             <Link
-              href="/profile"
+              href="/settings"
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#708C69] hover:bg-[#F0EDE6] hover:text-[#314A2E] transition-colors"
             >
               <UserIcon size={16} />

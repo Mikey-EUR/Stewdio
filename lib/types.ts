@@ -6,6 +6,7 @@ export interface Ingredient {
   ingredient: string;
   form: string;
   grocery_category?: string;
+  scaled?: string;         // computed, servings-scaled amount (cook screen)
 }
 
 export interface IngredientCategory {

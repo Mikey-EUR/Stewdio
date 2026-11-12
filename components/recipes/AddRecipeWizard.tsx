@@ -5,6 +5,7 @@ import type { Ingredient, IngredientCategory, Recipe, RecipeCollection } from '@
 import { AlertCircle, Check, Copy, ImagePlus, Loader2, Sparkles, Upload, Wand2, X } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import RecipeCard from './RecipeCard';
 
 type RecipeFormat = 'text' | 'photo' | null;
 
@@ -412,10 +413,10 @@ export default function AddRecipeWizard({
     }
   };
 
-  const handlePasteFromClipboard = async () => {
+  const readImageFromClipboard = async (): Promise<File | null> => {
     if (!navigator.clipboard?.read) {
-      setSaveError('Clipboard image read is not supported here. Use Ctrl/Cmd+V in the paste area or choose from gallery.');
-      return;
+      setSaveError('Clipboard image read is not supported here. Use Ctrl/Cmd+V in the paste area or choose a file instead.');
+      return null;
     }
 
     try {
@@ -425,16 +426,30 @@ export default function AddRecipeWizard({
         if (!imageType) continue;
 
         const blob = await item.getType(imageType);
-        const file = new File([blob], `screenshot-${Date.now()}.png`, { type: blob.type || 'image/png' });
-        await handleStep2ImagePick(file);
         setSaveError(null);
-        return;
+        return new File([blob], `screenshot-${Date.now()}.png`, { type: blob.type || 'image/png' });
       }
       setSaveError('No image found in clipboard. Copy a screenshot first and try again.');
+      return null;
     } catch {
       setSaveError('Could not read clipboard image. You can still paste with Ctrl/Cmd+V in the paste area below.');
+      return null;
     }
   };
+
+  const handlePasteFromClipboard = async () => {
+    const file = await readImageFromClipboard();
+    if (file) await handleStep2ImagePick(file);
+  };
+
+  const handlePasteRecipeImage = async () => {
+    const file = await readImageFromClipboard();
+    if (!file) return;
+    if (recipeImagePreview) URL.revokeObjectURL(recipeImagePreview);
+    setRecipeImageFile(file);
+    setRecipeImagePreview(URL.createObjectURL(file));
+  };
+
 
   const getCurrentUserInfo = async (): Promise<{ appUserId: string; email: string } | null> => {
     const { data: authData } = await supabase.auth.getUser();
@@ -1019,6 +1034,31 @@ export default function AddRecipeWizard({
               />
             </label>
 
+            <button
+              type="button"
+              onClick={handlePasteRecipeImage}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E8E4DC] bg-white px-4 py-2.5 text-sm font-medium text-[#243124] hover:border-[#314A2E]"
+            >
+              <Copy size={16} /> Paste screenshot
+            </button>
+
+            <div
+              onPaste={async (e) => {
+                const items = Array.from(e.clipboardData?.items ?? []);
+                const imageItem = items.find((item) => item.type.startsWith('image/'));
+                if (!imageItem) return;
+                const file = imageItem.getAsFile();
+                if (!file) return;
+                e.preventDefault();
+                if (recipeImagePreview) URL.revokeObjectURL(recipeImagePreview);
+                setRecipeImageFile(file);
+                setRecipeImagePreview(URL.createObjectURL(file));
+              }}
+              className="rounded-lg border border-[#E8E4DC] bg-[#FCFBF8] px-3 py-2 text-xs text-[#708C69]"
+            >
+              Paste area: press Ctrl/Cmd+V after copying a screenshot.
+            </div>
+
             {recipeImagePreview && (
               <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-[#E8E4DC] bg-[#F5F2EB] aspect-[4/3]">
                 <Image src={recipeImagePreview} alt="Recipe preview" fill className="object-cover" />
@@ -1040,6 +1080,24 @@ export default function AddRecipeWizard({
         {currentStep === 4 && (
           <div className="space-y-4">
             <p className="text-sm text-[#708C69]">Review your recipe details before saving.</p>
+
+            {parsedRecipe && (
+              <div className="mx-auto w-full max-w-[260px]">
+                <RecipeCard
+                  recipe={{
+                    id: String(parsedRecipe.id ?? 'preview'),
+                    title: parsedRecipe.title || 'Untitled Recipe',
+                    time: parsedRecipe.time || '',
+                    servings: Number(parsedRecipe.servings) || 4,
+                    ingredients: toGroupedIngredients(parsedRecipe.ingredients || []),
+                    steps: Array.isArray(parsedRecipe.steps) ? parsedRecipe.steps : [],
+                    tags: Array.isArray(parsedRecipe.tags) ? parsedRecipe.tags : [],
+                    image: recipeImagePreview ?? undefined,
+                  }}
+                  onClick={() => {}}
+                />
+              </div>
+            )}
 
             {parsedRecipe && (
               <div className="rounded-xl border border-[#E8E4DC] p-4">
