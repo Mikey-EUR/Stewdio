@@ -2,7 +2,7 @@
 
 import { useAppData } from '@/lib/DataProvider';
 import { logNavClick } from '@/lib/perfLog';
-import { BookOpen, CalendarDays, Home, Plus, ShoppingCart } from 'lucide-react';
+import { BookOpen, CalendarDays, Home, Plus, Settings, ShoppingCart } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -14,6 +14,7 @@ const LEFT_ITEMS  = [
 const RIGHT_ITEMS = [
   { href: '/plan',      label: 'Plan',      Icon: CalendarDays  },
   { href: '/groceries', label: 'Groceries', Icon: ShoppingCart  },
+  { href: '/settings',  label: 'Settings',  Icon: Settings      },
 ] as const;
 
 type NavItem = { href: string; label: string; Icon: React.ElementType };
