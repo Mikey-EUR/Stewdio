@@ -1,5 +1,6 @@
 'use client';
 
+import { getOrCreateAppUser } from '@/lib/appUser';
 import { scaleIngredients } from '@/lib/scaleIngredients';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Ingredient, IngredientCategory, Recipe } from '@/lib/types';
@@ -189,13 +190,9 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
       return;
     }
 
-    const { data: appUser, error: userErr } = await supabase
-      .from('app_users')
-      .select('app_user_id')
-      .eq('user_email_address', email)
-      .single();
+    const profile = await getOrCreateAppUser(supabase, email);
 
-    if (userErr || !appUser?.app_user_id) {
+    if (!profile) {
       setPlanMessage('Could not find your app user profile.');
       setPlanning(false);
       return;
@@ -211,7 +208,7 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
       planned_date: plannedDate,
       day_of_week: selectedDay,
       servings: parsedPlanServings,
-      app_user_id: appUser.app_user_id,
+      app_user_id: profile.appUserId,
       is_cooked: false,
     });
 

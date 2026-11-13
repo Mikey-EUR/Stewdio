@@ -1,6 +1,7 @@
 'use client';
 
 import RecipeModal from '@/components/recipes/RecipeModal';
+import { getOrCreateAppUser } from '@/lib/appUser';
 import { useAppData } from '@/lib/DataProvider';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Recipe, RecipeCollection } from '@/lib/types';
@@ -511,16 +512,12 @@ function RecipesClientContent() {
     const email = userData.user?.email?.toLowerCase().trim();
     if (!email) return;
 
-    const { data: appUser } = await supabase
-      .from('app_users')
-      .select('app_user_id')
-      .eq('user_email_address', email)
-      .single();
-    if (!appUser?.app_user_id) return;
+    const profile = await getOrCreateAppUser(supabase, email);
+    if (!profile) return;
 
     const { data, error } = await supabase
       .from('recipe_collections')
-      .insert({ collection_name: name, app_user_id: appUser.app_user_id, recipe_ids: [] })
+      .insert({ collection_name: name, app_user_id: profile.appUserId, recipe_ids: [] })
       .select('*')
       .single();
 

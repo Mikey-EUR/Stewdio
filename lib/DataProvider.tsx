@@ -28,6 +28,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import { getOrCreateAppUser } from './appUser';
 import { mapDBRecipeToRecipe, normalizeJoinedIngredients } from './recipeMapping';
 import { logTiming, now as perfNow } from './perfLog';
 import { createBrowserSupabase } from './supabase';
@@ -215,15 +216,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    const { data: appUser } = await supabase
-      .from('app_users')
-      .select('app_user_id, username')
-      .eq('user_email_address', email)
-      .maybeSingle();
-
+    const profile = await getOrCreateAppUser(supabase, email);
     logTiming('resolveProfile: getUser + app_users lookup', t0);
-    if (!appUser?.app_user_id) return null;
-    return { appUserId: appUser.app_user_id, username: appUser.username ?? '' };
+    return profile;
   }, [supabase]);
 
   const fetchRecipesFromDb = useCallback(async (userId: string, since?: string | null) => {

@@ -1,5 +1,6 @@
 'use client';
 
+import { getOrCreateAppUser } from '@/lib/appUser';
 import { createBrowserSupabase } from '@/lib/supabase';
 import type { Ingredient, IngredientCategory, Recipe, RecipeCollection } from '@/lib/types';
 import { AlertCircle, Check, Copy, ImagePlus, Loader2, Sparkles, Upload, Wand2, X } from 'lucide-react';
@@ -456,14 +457,9 @@ export default function AddRecipeWizard({
     const email = authData.user?.email?.toLowerCase().trim();
     if (!email) return null;
 
-    const { data: appUser } = await supabase
-      .from('app_users')
-      .select('app_user_id')
-      .eq('user_email_address', email)
-      .single();
-
-    if (!appUser?.app_user_id) return null;
-    return { appUserId: appUser.app_user_id, email };
+    const profile = await getOrCreateAppUser(supabase, email);
+    if (!profile) return null;
+    return { appUserId: profile.appUserId, email };
   };
 
   const createPendingCollections = async (appUserId: string): Promise<string[]> => {
