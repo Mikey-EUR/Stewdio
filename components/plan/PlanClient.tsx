@@ -356,26 +356,26 @@ export default function PlanClient() {
   };
 
   return (
-    <main className="flex-1 overflow-auto bg-[#FAF3E0] min-h-screen">
+    <main className="flex-1 overflow-auto bg-[#FAF8F2] min-h-screen">
       <div className="mx-auto max-w-2xl px-4 pt-10 pb-28 md:pb-10">
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-[#3A4A1F] text-center mb-3">
+        <h1 className="text-3xl font-bold text-[#314A2E] text-center mb-3">
           What are you cooking?
         </h1>
 
         {/* Week selector */}
         <div className="flex items-center justify-center gap-3 mb-4 relative">
-          <button onClick={prevWeek} disabled={selectedWeek === 'last'} className="p-1 text-[#6B8E23] disabled:text-gray-300">
+          <button onClick={prevWeek} disabled={selectedWeek === 'last'} className="p-1 text-[#314A2E] disabled:text-gray-300">
             <ChevronLeft size={24} />
           </button>
           <button
             onClick={() => setShowWeekDropdown(v => !v)}
-            className="text-base text-[#666] hover:text-[#3A4A1F] transition-colors"
+            className="text-base text-[#708C69] hover:text-[#314A2E] transition-colors"
           >
             {WEEK_LABELS[selectedWeek]} • {weekDateRange(weeks, selectedWeek)} ▼
           </button>
-          <button onClick={nextWeek} disabled={selectedWeek === 'next'} className="p-1 text-[#6B8E23] disabled:text-gray-300">
+          <button onClick={nextWeek} disabled={selectedWeek === 'next'} className="p-1 text-[#314A2E] disabled:text-gray-300">
             <ChevronRight size={24} />
           </button>
 
@@ -387,7 +387,7 @@ export default function PlanClient() {
                   <button
                     key={wk}
                     onClick={() => { setSelectedWeek(wk); setShowWeekDropdown(false); }}
-                    className="w-full px-4 py-2.5 text-center text-[#3A4A1F] hover:bg-[#FAF3E0] transition-colors"
+                    className="w-full px-4 py-2.5 text-center text-[#314A2E] hover:bg-[#FAF8F2] transition-colors"
                   >
                     {WEEK_LABELS[wk]} • {weekDateRange(weeks, wk)}
                   </button>
@@ -402,13 +402,13 @@ export default function PlanClient() {
           <div className="flex rounded-xl overflow-hidden shadow-sm border border-[#E8E4DC]">
             <button
               onClick={() => setViewMode('weekly')}
-              className={`flex items-center gap-1.5 px-5 py-2 text-sm font-medium transition-colors ${viewMode === 'weekly' ? 'bg-[#6B8E23] text-white' : 'bg-[#F4EBD0] text-[#3A4A1F] hover:bg-[#ece4cc]'}`}
+              className={`flex items-center gap-1.5 px-5 py-2 text-sm font-medium transition-colors ${viewMode === 'weekly' ? 'bg-[#314A2E] text-white' : 'bg-[#F5F2EB] text-[#314A2E] hover:bg-[#EDE9E1]'}`}
             >
               <List size={15} /> Weekly
             </button>
             <button
               onClick={() => setViewMode('agenda')}
-              className={`flex items-center gap-1.5 px-5 py-2 text-sm font-medium transition-colors ${viewMode === 'agenda' ? 'bg-[#6B8E23] text-white' : 'bg-[#F4EBD0] text-[#3A4A1F] hover:bg-[#ece4cc]'}`}
+              className={`flex items-center gap-1.5 px-5 py-2 text-sm font-medium transition-colors ${viewMode === 'agenda' ? 'bg-[#314A2E] text-white' : 'bg-[#F5F2EB] text-[#314A2E] hover:bg-[#EDE9E1]'}`}
             >
               <CalendarDays size={15} /> Agenda
             </button>
@@ -430,7 +430,7 @@ export default function PlanClient() {
                 if (!recipe) return null;
                 return (
                   <div key={pr.planned_recipe_id}>
-                    <div className="text-xs font-semibold text-[#6B8E23] uppercase tracking-wider mb-1 px-1">
+                    <div className="text-xs font-semibold text-[#314A2E] uppercase tracking-wider mb-1 px-1">
                       {dayLabel(pr)}
                     </div>
                     <PlanRecipeCard
@@ -465,7 +465,7 @@ export default function PlanClient() {
                   className={`rounded-xl transition-colors ${isDropTarget ? 'bg-[#e8f0e0]' : ''}`}
                 >
                   {/* Day bar */}
-                  <div className="flex items-center gap-2 bg-[#6B8E23] rounded-lg px-3 py-2 mb-2">
+                  <div className="flex items-center gap-2 bg-[#314A2E] rounded-lg px-3 py-2 mb-2">
                     <span className="text-white font-bold text-sm">{day === 'any' ? 'Anyday' : day}</span>
                     {dayDate && (
                       <span className="text-white/70 text-xs">{dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
@@ -492,7 +492,7 @@ export default function PlanClient() {
                       );
                     })}
                     {prs.length === 0 && (
-                      <div className={`h-12 rounded-xl border-2 border-dashed flex items-center justify-center text-xs text-[#A9B388] ${isDropTarget ? 'border-[#6B8E23] bg-[#f0f5ea]' : 'border-[#E8E4DC]'}`}>
+                      <div className={`h-12 rounded-xl border-2 border-dashed flex items-center justify-center text-xs text-[#A9B388] ${isDropTarget ? 'border-[#314A2E] bg-[#F0EDE6]' : 'border-[#E8E4DC]'}`}>
                         Drop here
                       </div>
                     )}

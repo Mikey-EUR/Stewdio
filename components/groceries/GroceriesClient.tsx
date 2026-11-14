@@ -74,7 +74,7 @@ function IngredientInfoModal({
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-bold text-[#243124] text-base capitalize">{ingredient}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={onClose} className="text-[#A9B388] hover:text-[#243124]"><X size={18} /></button>
         </div>
         <div className="space-y-2">
           {usages.map((u, i) => (
@@ -253,7 +253,7 @@ export default function GroceriesClient() {
         onClick={() => toggleChecked(ing.key)}
         className="w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 mb-2 shadow-sm border border-[#E8E4DC] text-left group"
       >
-        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isChecked ? 'bg-[#6B8E23] border-[#6B8E23]' : 'border-[#C5BFB5] bg-white'}`}>
+        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${isChecked ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD] bg-white'}`}>
           {isChecked && <Check size={13} className="text-white" />}
         </div>
         <span className={`flex-1 text-sm transition-colors ${isChecked ? 'line-through text-[#A9B388]' : 'text-[#243124]'}`}>
@@ -262,7 +262,7 @@ export default function GroceriesClient() {
         </span>
         <button
           onClick={e => { e.stopPropagation(); setInfoModal({ ingredient: ing.ingredient, usages: infoMap[ing.key] ?? [] }); }}
-          className="w-6 h-6 rounded-full bg-[#6B8E23] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 opacity-70 hover:opacity-100"
+          className="w-6 h-6 rounded-full bg-[#314A2E] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 opacity-70 hover:opacity-100"
         >
           i
         </button>
@@ -271,11 +271,11 @@ export default function GroceriesClient() {
   }
 
   return (
-    <main className="flex-1 overflow-auto bg-[#FAF3E0] min-h-screen">
+    <main className="flex-1 overflow-auto bg-[#FAF8F2] min-h-screen">
       <div className="mx-auto max-w-2xl px-4 pt-10 pb-28 md:pb-10">
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-[#3A4A1F] text-center mb-5">
+        <h1 className="text-3xl font-bold text-[#314A2E] text-center mb-5">
           Grocery List
         </h1>
 
@@ -290,7 +290,7 @@ export default function GroceriesClient() {
                 <button
                   key={wk}
                   onClick={() => toggleWeek(wk)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm ${active ? 'bg-[#FF6F61] text-white' : 'bg-[#A9B388] text-white opacity-70 hover:opacity-100'}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm ${active ? 'bg-[#D97442] text-white' : 'bg-[#A9B388] text-white opacity-70 hover:opacity-100'}`}
                 >
                   {WEEK_LABELS[wk]}
                 </button>
@@ -302,7 +302,7 @@ export default function GroceriesClient() {
           <div className="relative flex-1 w-full sm:w-auto">
             <button
               onClick={() => setShowFilter(v => !v)}
-              className="w-full flex items-center justify-between gap-2 bg-[#6B8E23] text-white text-sm font-bold rounded-xl px-4 py-2.5 shadow-sm"
+              className="w-full flex items-center justify-between gap-2 bg-[#314A2E] text-white text-sm font-bold rounded-xl px-4 py-2.5 shadow-sm"
             >
               <span className="truncate">{dropdownLabel}</span>
               <ChevronDown size={16} className="flex-shrink-0" />
@@ -317,7 +317,7 @@ export default function GroceriesClient() {
                     onClick={toggleAllRecipes}
                     className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[#FAF8F2] transition-colors"
                   >
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${allSelected ? 'bg-[#6B8E23] border-[#6B8E23]' : 'border-gray-300'}`}>
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${allSelected ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD]'}`}>
                       {allSelected && <Check size={11} className="text-white" />}
                     </div>
                     <span className="text-sm font-medium text-[#243124]">All recipes</span>
@@ -335,7 +335,7 @@ export default function GroceriesClient() {
                         <div className="flex items-center px-4 py-2.5 hover:bg-[#FAF8F2]">
                           <button
                             onClick={() => toggleWeek(wk)}
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 ${isWeekActive ? 'bg-[#6B8E23] border-[#6B8E23]' : 'border-gray-300'}`}
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center mr-3 ${isWeekActive ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD]'}`}
                           >
                             {isWeekActive && <Check size={11} className="text-white" />}
                           </button>
@@ -357,7 +357,7 @@ export default function GroceriesClient() {
                                 </span>
                               )}
                               {combosForWeek.length > 0 && (
-                                isExpanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />
+                                isExpanded ? <ChevronUp size={14} className="text-[#A9B388]" /> : <ChevronDown size={14} className="text-[#A9B388]" />
                               )}
                             </div>
                           </button>
@@ -380,7 +380,7 @@ export default function GroceriesClient() {
                                   }}
                                   className="w-full flex items-center gap-2 py-1.5 hover:text-[#314A2E]"
                                 >
-                                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${active ? 'bg-[#6B8E23] border-[#6B8E23]' : 'border-gray-300'}`}>
+                                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${active ? 'bg-[#314A2E] border-[#314A2E]' : 'border-[#CFC8BD]'}`}>
                                     {active && <Check size={9} className="text-white" />}
                                   </div>
                                   <span className="text-sm text-[#243124] truncate">{title}</span>
@@ -396,7 +396,7 @@ export default function GroceriesClient() {
 
                   <button
                     onClick={() => setShowFilter(false)}
-                    className="w-full py-3 text-sm font-bold text-[#6B8E23] hover:bg-[#FAF8F2]"
+                    className="w-full py-3 text-sm font-bold text-[#314A2E] hover:bg-[#FAF8F2]"
                   >
                     Done
                   </button>

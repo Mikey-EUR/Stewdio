@@ -3,6 +3,8 @@
 import AddRecipeWizard from '@/components/recipes/AddRecipeWizard';
 import { DataProvider, useAppData } from '@/lib/DataProvider';
 import { logNavCommitted } from '@/lib/perfLog';
+import { Settings } from 'lucide-react';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
@@ -43,6 +45,16 @@ function AppChromeInner({ children }: { children: ReactNode }) {
       <div className="hidden md:block">
         <TopNav />
       </div>
+
+      {/* Mobile-only settings entry point — desktop TopNav already has it top-right via the user menu. */}
+      <Link
+        href="/settings"
+        aria-label="Settings"
+        className="fixed right-3 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#708C69] shadow-sm border border-[#E8E4DC] hover:text-[#314A2E] transition-colors md:hidden"
+        style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+      >
+        <Settings size={18} />
+      </Link>
 
       <div className="flex-1 pb-[76px] md:pb-0">{children}</div>
 

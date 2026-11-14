@@ -113,6 +113,7 @@ interface DataContextValue {
   isLoggedIn: boolean;
   authChecked: boolean;
   username: string;
+  setUsername: Dispatch<SetStateAction<string>>;
 
   recipes: Recipe[];
   recipesReady: boolean;
@@ -485,6 +486,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     isLoggedIn,
     authChecked,
     username,
+    setUsername,
     recipes,
     recipesReady,
     collections,
