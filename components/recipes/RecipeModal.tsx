@@ -74,7 +74,6 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
 
   const ingredients = recipe.ingredients ?? [];
   const grouped = ingredients.length > 0 && isCategory(ingredients[0]);
-  const flatIngredients = useMemo(() => flattenIngredients(ingredients), [ingredients]);
 
   const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : 1;
   const scaledIngredients = useMemo(
@@ -124,9 +123,9 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
       .meta{color:#708C69;margin-bottom:14px}
       </style></head><body>
       <h1>${recipe.title}</h1>
-      <div class="meta">${recipe.time || ''} ${recipe.servings ? ` - ${recipe.servings} servings` : ''}</div>
+      <div class="meta">${recipe.time || ''} ${recipe.servings ? ` - ${cookServings} servings` : ''}</div>
       <h2>Ingredients</h2>
-      <ul>${flatIngredients.map((i) => `<li>${[i.amount, i.unit, i.ingredient, i.form].filter(Boolean).join(' ')}</li>`).join('')}</ul>
+      <ul>${flatScaledIngredients.map((i) => `<li>${[i.scaled ?? i.amount, i.unit, i.ingredient, i.form].filter(Boolean).join(' ')}</li>`).join('')}</ul>
       <h2>Instructions</h2>
       <ol>${(recipe.steps || []).map((s) => `<li>${s}</li>`).join('')}</ol>
       ${(recipe.notes && recipe.notes.length > 0) ? `<h2>Notes</h2><ul>${recipe.notes.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}
@@ -245,7 +244,7 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
           <h2 className="text-xl font-bold leading-snug text-[#243124]">{recipe.title}</h2>
           <div className="mt-2 mb-3 flex flex-wrap items-center gap-4">
             {recipe.time && <span className="flex items-center gap-1.5 text-sm text-[#708C69]"><Clock size={14} />{recipe.time}</span>}
-            {recipe.servings && <span className="flex items-center gap-1.5 text-sm text-[#708C69]"><Users size={14} />{recipe.servings} servings</span>}
+            {recipe.servings ? <span className="flex items-center gap-1.5 text-sm text-[#708C69]"><Users size={14} />{cookServings} servings</span> : null}
             {recipe.source && (
               <a href={recipe.source} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-[#314A2E] underline underline-offset-2 hover:opacity-70 transition-opacity">
                 <ExternalLink size={13} />Source
@@ -286,18 +285,20 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
                 </div>
               )}
 
-              {ingredients.length > 0 && (
+              {scaledIngredients.length > 0 && (
                 <section className="mb-6">
-                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#708C69]">Ingredients</h3>
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#708C69]">
+                    Ingredients{cookServings !== baseServings ? ` (for ${cookServings} servings)` : ''}
+                  </h3>
                   {grouped ? (
-                    (ingredients as IngredientCategory[]).map((group) => (
+                    (scaledIngredients as IngredientCategory[]).map((group) => (
                       <div key={group.category} className="mb-4">
                         <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[#314A2E]">{group.category}</p>
                         <ul className="space-y-1">{group.items.map((ing, i) => <IngredientRow key={i} ingredient={ing} />)}</ul>
                       </div>
                     ))
                   ) : (
-                    <ul className="space-y-1">{(ingredients as Ingredient[]).map((ing, i) => <IngredientRow key={i} ingredient={ing} />)}</ul>
+                    <ul className="space-y-1">{(scaledIngredients as Ingredient[]).map((ing, i) => <IngredientRow key={i} ingredient={ing} />)}</ul>
                   )}
                 </section>
               )}
@@ -449,7 +450,8 @@ export default function RecipeModal({ recipe, onClose, onChanged, initialServing
 }
 
 function IngredientRow({ ingredient }: { ingredient: Ingredient }) {
-  const amount = ingredient.amount ? String(ingredient.amount) : '';
+  const rawAmount = ingredient.scaled ?? ingredient.amount;
+  const amount = rawAmount ? String(rawAmount) : '';
   const parts = [amount, ingredient.unit, ingredient.ingredient, ingredient.form].filter(Boolean).join(' ');
   return (
     <li className="flex items-start gap-2 text-sm text-[#243124]">
